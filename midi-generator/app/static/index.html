@@ -129,6 +129,22 @@
         #downloadLink:hover {
             text-decoration: underline;
         }
+
+        #progressContainer {
+            width: 100%;
+            background-color: #334155;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 0.5rem;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 
@@ -146,6 +162,10 @@
 
         <button class="btn" id="processBtn" disabled>Process Audio</button>
 
+        <div id="progressContainer">
+            <div id="progressBar"></div>
+        </div>
+
         <div id="status"></div>
         <a id="downloadLink" href="#" download="drum_loop.mid">Download MIDI</a>
     </div>
@@ -157,6 +177,8 @@
         const status = document.getElementById('status');
         const fileInfo = document.getElementById('fileInfo');
         const downloadLink = document.getElementById('downloadLink');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
 
         let selectedFile = null;
 

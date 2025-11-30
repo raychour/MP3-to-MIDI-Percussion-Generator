@@ -46,7 +46,7 @@ async def read_index():
     return FileResponse('app/static/index.html')
 
 @app.post("/process")
-async def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     task_id = str(uuid.uuid4())
     temp_file = f"temp_{task_id}_{file.filename}"
     
