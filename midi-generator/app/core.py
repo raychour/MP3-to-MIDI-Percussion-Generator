@@ -110,9 +110,11 @@ def process_audio(file_path: str) -> str:
         
     sorted_onsets = sorted(onset_times)
     
+    # Create a list of all events: (time, type, note, velocity)
+    events = []
+    
     for onset_time in sorted_onsets:
         # Analyze frequency content at this onset
-        # Take a small window (e.g., 50ms)
         start_sample = int(onset_time * sr)
         end_sample = min(start_sample + int(0.05 * sr), len(y_loop))
         
@@ -121,9 +123,6 @@ def process_audio(file_path: str) -> str:
             centroid = librosa.feature.spectral_centroid(y=segment, sr=sr)
             avg_centroid = np.mean(centroid)
             
-            # Heuristic thresholds (tunable)
-            # Low centroid -> Kick (36)
-            # High centroid -> Snare (38) or HiHat (42)
             if avg_centroid < 1500:
                 note = 36 # Kick
             elif avg_centroid < 3000:
@@ -133,17 +132,26 @@ def process_audio(file_path: str) -> str:
         else:
             note = 38
             
-        # Delta time calculation
-        delta_time = onset_time - last_time
+        # Add Note On
+        events.append((onset_time, 'note_on', note, 100))
+        # Add Note Off (0.1s later)
+        events.append((onset_time + 0.1, 'note_off', note, 0))
+        
+    # Sort events by time
+    events.sort(key=lambda x: x[0])
+    
+    last_time = 0
+    
+    for time, msg_type, note, velocity in events:
+        delta_time = time - last_time
+        # Ensure non-negative (floating point errors might give -1e-10)
+        if delta_time < 0:
+            delta_time = 0
+            
         delta_ticks = time_to_ticks(delta_time)
         
-        # Note On
-        track.append(Message('note_on', note=note, velocity=100, time=delta_ticks))
-        
-        # Note Off (short duration, e.g., 0.1s)
-        track.append(Message('note_off', note=note, velocity=0, time=time_to_ticks(0.1)))
-        
-        last_time = onset_time + 0.1
+        track.append(Message(msg_type, note=note, velocity=velocity, time=delta_ticks))
+        last_time = time
 
     midi_output = f"output_{filename_stem}.mid"
     mid.save(midi_output)
