@@ -165,8 +165,19 @@
         <div id="fileInfo" style="margin-bottom: 1rem; color: var(--text); display: none;"></div>
 
         <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label for="mode" style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Output
+                Mode:</label>
+            <select id="mode"
+                style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background-color: var(--bg); color: var(--text); border: 1px solid var(--text-muted); margin-bottom: 1rem;">
+                <option value="midi" selected>Drum to MIDI</option>
+                <option value="vocals">Extract Vocals (Audio)</option>
+                <option value="drums">Extract Drums (Audio)</option>
+                <option value="bass">Extract Bass (Audio)</option>
+            </select>
+
             <label for="quantization"
-                style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Quantization:</label>
+                style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Quantization (MIDI
+                Only):</label>
             <select id="quantization"
                 style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background-color: var(--bg); color: var(--text); border: 1px solid var(--text-muted);">
                 <option value="4">1/4 Note</option>
@@ -307,10 +318,13 @@
             const formData = new FormData();
             formData.append('file', selectedFile); // Use selectedFile here
             const quantization = document.getElementById('quantization').value;
+            const mode = document.getElementById('mode').value;
             formData.append('quantization', quantization);
+            formData.append('mode', mode);
 
             try {
                 // 1. Upload and start task
+                status.textContent = 'Uploading...';
                 const response = await fetch('/process', {
                     method: 'POST',
                     body: formData
@@ -344,6 +358,11 @@
 
                         // Show download link
                         downloadLink.href = `/download/${taskId}`;
+                        if (statusData.result.endsWith('.mid')) {
+                            downloadLink.textContent = 'Download MIDI';
+                        } else {
+                            downloadLink.textContent = 'Download Audio (WAV)';
+                        }
                         downloadLink.style.display = 'inline-block';
 
                         // Show Spectrogram

@@ -15,7 +15,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Structure: { task_id: { "status": "processing"|"complete"|"error", "progress": int, "message": str, "tempo": float, "result": str } }
 tasks: Dict[str, dict] = {}
 
-def run_processing_task(task_id: str, temp_file: str, quantization: int):
+def run_processing_task(task_id: str, temp_file: str, quantization: int, mode: str):
     try:
         tasks[task_id]["status"] = "processing"
         tasks[task_id]["progress"] = 0
@@ -25,7 +25,7 @@ def run_processing_task(task_id: str, temp_file: str, quantization: int):
             tasks[task_id]["progress"] = progress
             tasks[task_id]["message"] = message
 
-        midi_path, tempo, spectrogram_path = process_audio(temp_file, progress_callback, quantization)
+        midi_path, tempo, spectrogram_path = process_audio(temp_file, progress_callback, quantization, mode)
         
         tasks[task_id]["status"] = "complete"
         tasks[task_id]["progress"] = 100
@@ -47,7 +47,7 @@ async def read_index():
     return FileResponse('app/static/index.html')
 
 @app.post("/process")
-def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...), quantization: int = 16):
+def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...), quantization: int = 16, mode: str = Form("midi")):
     task_id = str(uuid.uuid4())
     temp_file = f"temp_{task_id}_{file.filename}"
     
@@ -63,7 +63,7 @@ def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(
         "spectrogram": None
     }
     
-    background_tasks.add_task(run_processing_task, task_id, temp_file, quantization)
+    background_tasks.add_task(run_processing_task, task_id, temp_file, quantization, mode)
     
     return {"task_id": task_id}
 
@@ -78,7 +78,9 @@ async def download_result(task_id: str):
     if task_id not in tasks or tasks[task_id]["status"] != "complete":
         raise HTTPException(status_code=404, detail="Result not ready or found")
     
-    return FileResponse(tasks[task_id]["result"], filename="output.mid")
+    result_path = tasks[task_id]["result"]
+    filename = os.path.basename(result_path)
+    return FileResponse(result_path, filename=filename)
 
 @app.get("/spectrogram/{task_id}")
 async def download_spectrogram(task_id: str):

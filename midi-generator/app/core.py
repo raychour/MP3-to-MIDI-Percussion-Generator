@@ -8,42 +8,71 @@ import shutil
 import matplotlib.pyplot as plt
 import librosa.display
 
-def process_audio(file_path: str, progress_callback=None, quantization: int = 16) -> tuple[str, float, str]:
+def process_audio(file_path: str, progress_callback=None, quantization: int = 16, mode: str = "midi") -> tuple[str, float, str]:
     """
     Main processing pipeline:
-    1. Separate drums using Demucs
-    2. Find loopable section
-    3. Transcribe to MIDI
+    1. Separate audio using Demucs
+    2. If MIDI: Find loopable section & Transcribe
+    3. If Audio: Return separated stem
     """
     def report(p, m):
         if progress_callback:
             progress_callback(p, m)
             
-    print(f"Processing {file_path} with quantization 1/{quantization}")
-    report(5, "Separating drums (this may take a while)...")
+    print(f"Processing {file_path} with mode={mode}, quantization=1/{quantization}")
     
-    # 1. Separate Drums
-    # demucs -n htdemucs --two-stems=drums <file>
-    # Output goes to separated/htdemucs/<filename>/drums.wav
-    cmd = ["demucs", "-n", "htdemucs", "--two-stems=drums", file_path]
+    # Determine Demucs target
+    demucs_target = "drums" # default
+    if mode == "vocals":
+        demucs_target = "vocals"
+    elif mode == "bass":
+        demucs_target = "bass"
+    elif mode == "drums":
+        demucs_target = "drums"
+        
+    report(5, f"Separating {demucs_target} (this may take a while)...")
+    
+    # 1. Separate Audio
+    # demucs -n htdemucs --two-stems=<target> <file>
+    cmd = ["demucs", "-n", "htdemucs", f"--two-stems={demucs_target}", file_path]
     print(f"Running Demucs: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
     
-    report(60, "Analyzing audio for loops...")
-    
     filename_stem = Path(file_path).stem
-    # Demucs output structure: separated/htdemucs/{filename_stem}/drums.wav
-    # Note: Demucs might normalize the filename, so we need to be careful. 
-    # Usually it's safe to assume it uses the stem.
-    drums_path = Path("separated") / "htdemucs" / filename_stem / "drums.wav"
+    stem_path = Path("separated") / "htdemucs" / filename_stem / f"{demucs_target}.wav"
     
-    if not drums_path.exists():
-        raise FileNotFoundError(f"Demucs failed to produce {drums_path}")
+    if not stem_path.exists():
+        raise FileNotFoundError(f"Demucs failed to produce {stem_path}")
 
-    # 2. Find Loopable Section
-    # Load drums
-    y, sr = librosa.load(drums_path, sr=None)
+    # Load audio for spectrogram/analysis
+    y, sr = librosa.load(stem_path, sr=None)
     
+    # If Audio Mode, return the stem directly
+    if mode != "midi":
+        report(90, "Generating spectrogram...")
+        
+        # Generate Spectrogram
+        plt.figure(figsize=(10, 4))
+        D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
+        librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
+        plt.colorbar(format='%+2.0f dB')
+        plt.title(f'Spectrogram of Extracted {demucs_target.capitalize()}')
+        plt.tight_layout()
+        
+        spectrogram_output = f"spectrogram_{filename_stem}.png"
+        plt.savefig(spectrogram_output)
+        plt.close()
+        
+        # Copy stem to output location
+        output_wav = f"output_{filename_stem}_{demucs_target}.wav"
+        shutil.copy(stem_path, output_wav)
+        
+        report(100, "Done!")
+        return output_wav, 0.0, spectrogram_output
+
+    # --- MIDI MODE (Existing Logic) ---
+    report(60, "Analyzing audio for loops...")
+
     # Heuristic: Find 4 bars of high activity, prioritizing the "beat" (Kick)
     # Filter for bass to find the "beat" (4 on the floor)
     import scipy.signal
