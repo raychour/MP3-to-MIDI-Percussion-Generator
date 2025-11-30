@@ -44,6 +44,15 @@ If you are running Docker inside an LXC container, you must configure GPU passth
      ./NVIDIA-Linux-x86_64-xxx.xx.run --no-kernel-module
      ```
    - Install Docker and NVIDIA Container Toolkit as shown in Option 1.
+   - **Important**: When running Docker inside LXC, you may need to disable seccomp or run as privileged if you encounter permission errors.
+     ```bash
+     docker run -d \
+       --gpus all \
+       --security-opt seccomp=unconfined \
+       -p 8000:8000 \
+       --name midi-gen \
+       midi-generator
+     ```
 
 
 ## Build and Run
