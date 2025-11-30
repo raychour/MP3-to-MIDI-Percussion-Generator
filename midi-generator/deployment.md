@@ -48,7 +48,7 @@ If you are running Docker inside an LXC container, you must configure GPU passth
      ```bash
      docker run -d \
        --gpus all \
-       --security-opt seccomp=unconfined \
+       --privileged \
        -p 8000:8000 \
        --name midi-gen \
        midi-generator
