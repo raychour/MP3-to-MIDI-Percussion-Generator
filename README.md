@@ -7,6 +7,7 @@ A Dockerized Python application that transforms MP3 audio files into MIDI percus
 *   **GPU-Accelerated Source Separation**: Uses **Demucs** (Hybrid Transformer) powered by PyTorch and CUDA to isolate drums from full mixes with state-of-the-art quality.
 *   **Intelligent Loop Detection**: Features a custom "4 on the Floor" heuristic to find the most rhythmic, bass-heavy sections of the track.
 *   **Advanced Transcription**: Uses spectral analysis to distinguish between Kick, Snare, and Hi-Hats.
+*   **Adjustable Quantization**: Selectable output quantization (1/4, 1/8, 1/16, 1/32) to snap beats to the grid for easy DAW integration.
 *   **Web Interface**: Simple drag-and-drop UI with real-time progress tracking and tempo detection.
 *   **Containerized**: Fully Dockerized with NVIDIA GPU passthrough support for easy deployment on Proxmox or Linux servers.
 
