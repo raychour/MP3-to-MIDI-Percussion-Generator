@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Install system dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+ENV MKL_THREADING_LAYER=GNU
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
