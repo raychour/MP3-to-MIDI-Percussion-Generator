@@ -38,6 +38,8 @@ def process_audio(file_path: str) -> str:
     # Heuristic: Find 4 bars of high activity
     # Estimate tempo
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    if isinstance(tempo, np.ndarray):
+        tempo = float(tempo)
     print(f"Estimated tempo: {tempo}")
     
     # 4 bars duration in seconds
