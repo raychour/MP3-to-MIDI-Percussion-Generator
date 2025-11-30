@@ -160,6 +160,18 @@
 
         <div id="fileInfo" style="margin-bottom: 1rem; color: var(--text); display: none;"></div>
 
+        <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label for="quantization"
+                style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Quantization:</label>
+            <select id="quantization"
+                style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background-color: var(--bg); color: var(--text); border: 1px solid var(--text-muted);">
+                <option value="4">1/4 Note</option>
+                <option value="8">1/8 Note</option>
+                <option value="16" selected>1/16 Note</option>
+                <option value="32">1/32 Note</option>
+            </select>
+        </div>
+
         <button class="btn" id="processBtn" disabled>Process Audio</button>
 
         <div id="progressContainer">
@@ -231,6 +243,8 @@
 
             const formData = new FormData();
             formData.append('file', selectedFile); // Use selectedFile here
+            const quantization = document.getElementById('quantization').value;
+            formData.append('quantization', quantization);
 
             try {
                 // 1. Upload and start task

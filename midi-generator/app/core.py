@@ -6,7 +6,7 @@ import soundfile as sf
 from pathlib import Path
 import shutil
 
-def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
+def process_audio(file_path: str, progress_callback=None, quantization: int = 16) -> tuple[str, float]:
     """
     Main processing pipeline:
     1. Separate drums using Demucs
@@ -17,7 +17,7 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
         if progress_callback:
             progress_callback(p, m)
             
-    print(f"Processing {file_path}")
+    print(f"Processing {file_path} with quantization 1/{quantization}")
     report(5, "Separating drums (this may take a while)...")
     
     # 1. Separate Drums
@@ -151,26 +151,34 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
         else:
             note = 38
             
+        # Quantize
+        abs_ticks = time_to_ticks(onset_time)
+        if quantization > 0:
+             grid_ticks = int(ticks_per_beat * 4 / quantization)
+             abs_ticks = round(abs_ticks / grid_ticks) * grid_ticks
+        
+        # Note Off (fixed duration 0.1s)
+        duration_ticks = time_to_ticks(0.1)
+        off_ticks = abs_ticks + duration_ticks
+        
         # Add Note On
-        events.append((onset_time, 'note_on', note, 100))
-        # Add Note Off (0.1s later)
-        events.append((onset_time + 0.1, 'note_off', note, 0))
+        events.append((abs_ticks, 'note_on', note, 100))
+        # Add Note Off
+        events.append((off_ticks, 'note_off', note, 0))
         
     # Sort events by time
     events.sort(key=lambda x: x[0])
     
-    last_time = 0
+    last_ticks = 0
     
-    for time, msg_type, note, velocity in events:
-        delta_time = time - last_time
-        # Ensure non-negative (floating point errors might give -1e-10)
-        if delta_time < 0:
-            delta_time = 0
+    for abs_ticks, msg_type, note, velocity in events:
+        delta_ticks = abs_ticks - last_ticks
+        # Ensure non-negative
+        if delta_ticks < 0:
+            delta_ticks = 0
             
-        delta_ticks = time_to_ticks(delta_time)
-        
         track.append(Message(msg_type, note=note, velocity=velocity, time=delta_ticks))
-        last_time = time
+        last_ticks = abs_ticks
 
     midi_output = f"output_{filename_stem}.mid"
     mid.save(midi_output)

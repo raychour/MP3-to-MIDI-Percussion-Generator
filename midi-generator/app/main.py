@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import shutil
@@ -15,7 +15,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Structure: { task_id: { "status": "processing"|"complete"|"error", "progress": int, "message": str, "tempo": float, "result": str } }
 tasks: Dict[str, dict] = {}
 
-def run_processing_task(task_id: str, temp_file: str):
+def run_processing_task(task_id: str, temp_file: str, quantization: int):
     try:
         tasks[task_id]["status"] = "processing"
         tasks[task_id]["progress"] = 0
@@ -25,7 +25,7 @@ def run_processing_task(task_id: str, temp_file: str):
             tasks[task_id]["progress"] = progress
             tasks[task_id]["message"] = message
 
-        midi_path, tempo = process_audio(temp_file, progress_callback)
+        midi_path, tempo = process_audio(temp_file, progress_callback, quantization)
         
         tasks[task_id]["status"] = "complete"
         tasks[task_id]["progress"] = 100
@@ -46,7 +46,7 @@ async def read_index():
     return FileResponse('app/static/index.html')
 
 @app.post("/process")
-def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...), quantization: int = 16):
     task_id = str(uuid.uuid4())
     temp_file = f"temp_{task_id}_{file.filename}"
     
@@ -61,7 +61,7 @@ def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(
         "result": None
     }
     
-    background_tasks.add_task(run_processing_task, task_id, temp_file)
+    background_tasks.add_task(run_processing_task, task_id, temp_file, quantization)
     
     return {"task_id": task_id}
 
