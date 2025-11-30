@@ -233,7 +233,7 @@
         function setupVisualizer(file) {
             const url = URL.createObjectURL(file);
             audioPreview.src = url;
-            audioPreview.style.display = 'block';
+            // audioPreview.style.display = 'block'; // Keep hidden as per user request
             canvas.style.display = 'block';
 
             // Auto-play to show visualizer immediately
