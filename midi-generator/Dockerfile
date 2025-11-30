@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
+# Install build dependencies first (Cython is required for madmom)
+RUN pip install --no-cache-dir Cython numpy
+
 # Install Python dependencies
 # Note: omnizart might require some specific handling, we'll start with pip
 RUN pip install --no-cache-dir -r requirements.txt
