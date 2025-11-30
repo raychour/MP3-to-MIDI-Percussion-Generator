@@ -202,38 +202,72 @@
             if (!selectedFile) return;
 
             processBtn.disabled = true;
-            status.innerHTML = '<span class="loader"></span>Processing... This may take a minute.';
+            status.textContent = 'Uploading...';
+            progressBar.style.width = '0%';
+            progressContainer.style.display = 'block';
             downloadLink.style.display = 'none';
 
             const formData = new FormData();
-            formData.append('file', selectedFile);
+            formData.append('file', selectedFile); // Use selectedFile here
 
             try {
+                // 1. Upload and start task
                 const response = await fetch('/process', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (response.ok) {
-                    const tempo = response.headers.get('X-Tempo');
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    downloadLink.href = url;
-                    downloadLink.style.display = 'inline-block';
-
-                    let statusMsg = 'Processing complete!';
-                    if (tempo) {
-                        statusMsg += ` Detected Tempo: <strong>${parseFloat(tempo).toFixed(1)} BPM</strong>`;
-                    }
-                    status.innerHTML = statusMsg;
-                } else {
-                    status.textContent = 'Error processing file. Check server logs.';
+                if (!response.ok) {
+                    throw new Error('Upload failed');
                 }
+
+                const data = await response.json();
+                const taskId = data.task_id;
+
+                // 2. Poll for status
+                let complete = false;
+                while (!complete) {
+                    await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+
+                    const statusResp = await fetch(`/status/${taskId}`);
+                    if (!statusResp.ok) {
+                        throw new Error('Status check failed');
+                    }
+
+                    const statusData = await statusResp.json();
+
+                    // Update UI
+                    progressBar.style.width = `${statusData.progress || 0}%`;
+                    status.textContent = statusData.message || 'Processing...';
+
+                    if (statusData.status === 'complete') {
+                        complete = true;
+
+                        // Show download link
+                        downloadLink.href = `/download/${taskId}`;
+                        downloadLink.style.display = 'inline-block';
+
+                        let statusMsg = 'Processing complete!';
+                        if (statusData.tempo) {
+                            statusMsg += ` Detected Tempo: <strong>${parseFloat(statusData.tempo).toFixed(1)} BPM</strong>`;
+                        }
+                        status.innerHTML = statusMsg;
+
+                    } else if (statusData.status === 'error') {
+                        throw new Error(statusData.message);
+                    }
+                }
+
             } catch (error) {
-                status.textContent = 'Network error occurred.';
-                console.error(error);
+                console.error('Error:', error);
+                status.textContent = 'Error: ' + error.message;
             } finally {
                 processBtn.disabled = false;
+                progressContainer.style.display = 'none';
+                // Reset file input
+                fileInput.value = '';
+                selectedFile = null; // Clear selected file
+                fileInfo.style.display = 'none'; // Hide file info
             }
         });
     </script>

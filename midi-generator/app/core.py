@@ -6,14 +6,19 @@ import soundfile as sf
 from pathlib import Path
 import shutil
 
-def process_audio(file_path: str) -> tuple[str, float]:
+def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
     """
     Main processing pipeline:
     1. Separate drums using Demucs
     2. Find loopable section
     3. Transcribe to MIDI
     """
+    def report(p, m):
+        if progress_callback:
+            progress_callback(p, m)
+            
     print(f"Processing {file_path}")
+    report(5, "Separating drums (this may take a while)...")
     
     # 1. Separate Drums
     # demucs -n htdemucs --two-stems=drums <file>
@@ -21,6 +26,8 @@ def process_audio(file_path: str) -> tuple[str, float]:
     cmd = ["demucs", "-n", "htdemucs", "--two-stems=drums", file_path]
     print(f"Running Demucs: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
+    
+    report(60, "Analyzing audio for loops...")
     
     filename_stem = Path(file_path).stem
     # Demucs output structure: separated/htdemucs/{filename_stem}/drums.wav
@@ -41,6 +48,8 @@ def process_audio(file_path: str) -> tuple[str, float]:
     if isinstance(tempo, np.ndarray):
         tempo = float(tempo)
     print(f"Estimated tempo: {tempo}")
+    
+    report(70, f"Tempo detected: {tempo:.1f} BPM. Finding best loop...")
     
     # 4 bars duration in seconds
     # 4 beats/bar * 4 bars = 16 beats
@@ -79,6 +88,7 @@ def process_audio(file_path: str) -> tuple[str, float]:
     
     # 3. Transcribe to MIDI using Librosa (Custom Logic)
     print("Transcribing with Librosa...")
+    report(85, "Transcribing to MIDI...")
     
     # Load the loop audio
     y_loop, sr = librosa.load(loop_audio_path, sr=None)
@@ -155,5 +165,7 @@ def process_audio(file_path: str) -> tuple[str, float]:
 
     midi_output = f"output_{filename_stem}.mid"
     mid.save(midi_output)
+    
+    report(100, "Done!")
          
     return midi_output, tempo
