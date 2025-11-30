@@ -14,19 +14,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
-# Install build dependencies first (Cython is required for madmom)
-RUN pip install --no-cache-dir Cython numpy
-
 # Install Python dependencies
-# Note: omnizart might require some specific handling, we'll start with pip
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Install omnizart models (this might be large, better to do it in build or run script, 
-# but for now let's try to install the package properly)
-# Omnizart requires `omnizart download-checkpoints` to be run. 
-# We will do this in the entrypoint or a separate setup step to avoid huge image size if possible,
-# or bake it in if we want faster startup. Let's bake it in for convenience.
-RUN omnizart download-checkpoints
 
 COPY . .
 

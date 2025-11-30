@@ -2,10 +2,10 @@ fastapi
 uvicorn
 python-multipart
 demucs
-omnizart
 librosa
 mido
 numpy
 scipy
 torch
 torchaudio
+PyYAML>=6.0

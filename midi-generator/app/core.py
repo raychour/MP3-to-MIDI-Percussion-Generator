@@ -75,17 +75,75 @@ def process_audio(file_path: str) -> str:
     loop_audio_path = f"temp_loop_{filename_stem}.wav"
     sf.write(loop_audio_path, y_loop, sr)
     
-    # 3. Transcribe to MIDI using Omnizart
-    # omnizart drum transcribe <file>
-    print("Running Omnizart...")
-    cmd_omni = ["omnizart", "drum", "transcribe", loop_audio_path]
-    subprocess.run(cmd_omni, check=True)
+    # 3. Transcribe to MIDI using Librosa (Custom Logic)
+    print("Transcribing with Librosa...")
     
-    # Omnizart outputs to the same folder with .mid extension
-    # e.g. temp_loop_{filename_stem}.mid
-    midi_output = f"temp_loop_{filename_stem}.mid"
+    # Load the loop audio
+    y_loop, sr = librosa.load(loop_audio_path, sr=None)
     
-    if not os.path.exists(midi_output):
-         raise FileNotFoundError(f"Omnizart failed to produce {midi_output}")
+    # Detect onsets
+    onset_frames = librosa.onset.onset_detect(y=y_loop, sr=sr, backtrack=True)
+    onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+    
+    # Create MIDI file
+    import mido
+    from mido import MidiFile, MidiTrack, Message, MetaMessage
+    
+    mid = MidiFile()
+    track = MidiTrack()
+    mid.tracks.append(track)
+    
+    track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(tempo)))
+    
+    # Simple heuristic to distinguish Kick vs Snare/HiHat
+    # We look at the spectral centroid of the audio segment around the onset
+    
+    last_time = 0
+    ticks_per_beat = mid.ticks_per_beat
+    
+    # Convert seconds to ticks
+    # ticks = seconds * (tempo / 60) * ticks_per_beat
+    def time_to_ticks(t):
+        return int(t * (tempo / 60) * ticks_per_beat)
+        
+    sorted_onsets = sorted(onset_times)
+    
+    for onset_time in sorted_onsets:
+        # Analyze frequency content at this onset
+        # Take a small window (e.g., 50ms)
+        start_sample = int(onset_time * sr)
+        end_sample = min(start_sample + int(0.05 * sr), len(y_loop))
+        
+        if end_sample > start_sample:
+            segment = y_loop[start_sample:end_sample]
+            centroid = librosa.feature.spectral_centroid(y=segment, sr=sr)
+            avg_centroid = np.mean(centroid)
+            
+            # Heuristic thresholds (tunable)
+            # Low centroid -> Kick (36)
+            # High centroid -> Snare (38) or HiHat (42)
+            if avg_centroid < 1500:
+                note = 36 # Kick
+            elif avg_centroid < 3000:
+                note = 38 # Snare
+            else:
+                note = 42 # Closed HiHat
+        else:
+            note = 38
+            
+        # Delta time calculation
+        delta_time = onset_time - last_time
+        delta_ticks = time_to_ticks(delta_time)
+        
+        # Note On
+        track.append(Message('note_on', note=note, velocity=100, time=delta_ticks))
+        
+        # Note Off (short duration, e.g., 0.1s)
+        track.append(Message('note_off', note=note, velocity=0, time=time_to_ticks(0.1)))
+        
+        last_time = onset_time + 0.1
+
+    midi_output = f"output_{filename_stem}.mid"
+    mid.save(midi_output)
          
     return midi_output
