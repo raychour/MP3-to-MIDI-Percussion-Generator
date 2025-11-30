@@ -83,6 +83,14 @@ docker exec -it midi-gen nvidia-smi
 ```
 
 ## Usage
+
+### Web Interface
+1.  Open your browser and navigate to `http://<proxmox-ip>:8000`.
+2.  Drag and drop your MP3 file into the drop zone.
+3.  Click **Process Audio**.
+4.  Once complete, click **Download MIDI** to get your drum loop.
+
+### API Usage
 Send a POST request with an MP3 file to the endpoint:
 ```bash
 curl -X POST "http://<proxmox-ip>:8000/process" \
