@@ -6,7 +6,7 @@ import soundfile as sf
 from pathlib import Path
 import shutil
 
-def process_audio(file_path: str, progress_callback=None, quantization: int = 16) -> tuple[str, float]:
+def process_audio(file_path: str, progress_callback=None, quantization: int = 16) -> tuple[str, float, str]:
     """
     Main processing pipeline:
     1. Separate drums using Demucs
@@ -183,6 +183,22 @@ def process_audio(file_path: str, progress_callback=None, quantization: int = 16
     midi_output = f"output_{filename_stem}.mid"
     mid.save(midi_output)
     
+    # Generate Spectrogram
+    import matplotlib.pyplot as plt
+    import librosa.display
+    
+    plt.figure(figsize=(10, 4))
+    # Use the loop audio we already loaded
+    D = librosa.amplitude_to_db(np.abs(librosa.stft(y_loop)), ref=np.max)
+    librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title('Spectrogram of Extracted Loop')
+    plt.tight_layout()
+    
+    spectrogram_output = f"spectrogram_{filename_stem}.png"
+    plt.savefig(spectrogram_output)
+    plt.close()
+    
     report(100, "Done!")
          
-    return midi_output, tempo
+    return midi_output, tempo, spectrogram_output

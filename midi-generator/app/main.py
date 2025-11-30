@@ -25,13 +25,14 @@ def run_processing_task(task_id: str, temp_file: str, quantization: int):
             tasks[task_id]["progress"] = progress
             tasks[task_id]["message"] = message
 
-        midi_path, tempo = process_audio(temp_file, progress_callback, quantization)
+        midi_path, tempo, spectrogram_path = process_audio(temp_file, progress_callback, quantization)
         
         tasks[task_id]["status"] = "complete"
         tasks[task_id]["progress"] = 100
         tasks[task_id]["message"] = "Complete"
         tasks[task_id]["tempo"] = tempo
         tasks[task_id]["result"] = midi_path
+        tasks[task_id]["spectrogram"] = spectrogram_path
         
     except Exception as e:
         tasks[task_id]["status"] = "error"
@@ -58,7 +59,8 @@ def process_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(
         "progress": 0,
         "message": "Queued",
         "tempo": 0.0,
-        "result": None
+        "result": None,
+        "spectrogram": None
     }
     
     background_tasks.add_task(run_processing_task, task_id, temp_file, quantization)
@@ -77,3 +79,10 @@ async def download_result(task_id: str):
         raise HTTPException(status_code=404, detail="Result not ready or found")
     
     return FileResponse(tasks[task_id]["result"], filename="output.mid")
+
+@app.get("/spectrogram/{task_id}")
+async def download_spectrogram(task_id: str):
+    if task_id not in tasks or tasks[task_id]["status"] != "complete":
+        raise HTTPException(status_code=404, detail="Result not ready or found")
+    
+    return FileResponse(tasks[task_id]["spectrogram"], media_type="image/png")

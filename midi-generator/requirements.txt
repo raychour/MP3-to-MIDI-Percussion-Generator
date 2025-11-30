@@ -9,3 +9,4 @@ scipy
 torch
 torchaudio
 PyYAML>=6.0
+matplotlib>=3.7.0

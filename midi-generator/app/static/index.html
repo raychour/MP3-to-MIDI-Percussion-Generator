@@ -158,6 +158,10 @@
             <input type="file" id="fileInput" accept=".mp3,audio/mpeg">
         </div>
 
+        <canvas id="visualizer" width="500" height="100"
+            style="width: 100%; background-color: #0f172a; border-radius: 0.5rem; margin-bottom: 1rem; display: none;"></canvas>
+        <audio id="audioPreview" controls style="width: 100%; margin-bottom: 1rem; display: none;"></audio>
+
         <div id="fileInfo" style="margin-bottom: 1rem; color: var(--text); display: none;"></div>
 
         <div style="margin-bottom: 1.5rem; text-align: left;">
@@ -219,6 +223,60 @@
             }
         });
 
+        const audioPreview = document.getElementById('audioPreview');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        let audioContext;
+        let analyser;
+        let source;
+
+        function setupVisualizer(file) {
+            const url = URL.createObjectURL(file);
+            audioPreview.src = url;
+            audioPreview.style.display = 'block';
+            canvas.style.display = 'block';
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source = audioContext.createMediaElementSource(audioPreview);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+            }
+
+            drawVisualizer();
+        }
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            canvasCtx.fillStyle = '#0f172a'; // bg color
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 2;
+
+                // Gradient color
+                const r = barHeight + 25 * (i / bufferLength);
+                const g = 250 * (i / bufferLength);
+                const b = 50;
+
+                canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+
         function handleFile(file) {
             if (file.type.startsWith('audio/')) {
                 selectedFile = file;
@@ -227,6 +285,8 @@
                 processBtn.disabled = false;
                 status.textContent = '';
                 downloadLink.style.display = 'none';
+
+                setupVisualizer(file);
             } else {
                 status.textContent = 'Please select a valid audio file.';
             }
@@ -282,6 +342,14 @@
                         // Show download link
                         downloadLink.href = `/download/${taskId}`;
                         downloadLink.style.display = 'inline-block';
+
+                        // Show Spectrogram
+                        const specImg = document.createElement('img');
+                        specImg.src = `/spectrogram/${taskId}`;
+                        specImg.style.width = '100%';
+                        specImg.style.marginTop = '1rem';
+                        specImg.style.borderRadius = '0.5rem';
+                        status.parentNode.insertBefore(specImg, status.nextSibling);
 
                         let statusMsg = 'Processing complete!';
                         if (statusData.tempo) {
