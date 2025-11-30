@@ -20,8 +20,9 @@ async def process_endpoint(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        midi_path = process_audio(temp_file)
-        return FileResponse(midi_path, filename="output.mid")
+        midi_path, tempo = process_audio(temp_file)
+        headers = {"X-Tempo": str(tempo)}
+        return FileResponse(midi_path, filename="output.mid", headers=headers)
     finally:
         # Cleanup temp input file, output file cleanup might need a background task
         if os.path.exists(temp_file):

@@ -6,7 +6,7 @@ import soundfile as sf
 from pathlib import Path
 import shutil
 
-def process_audio(file_path: str) -> str:
+def process_audio(file_path: str) -> tuple[str, float]:
     """
     Main processing pipeline:
     1. Separate drums using Demucs
@@ -156,4 +156,4 @@ def process_audio(file_path: str) -> str:
     midi_output = f"output_{filename_stem}.mid"
     mid.save(midi_output)
          
-    return midi_output
+    return midi_output, tempo

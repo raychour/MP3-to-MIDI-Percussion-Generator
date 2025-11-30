@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,7 +57,8 @@
             margin-bottom: 1.5rem;
         }
 
-        .drop-zone:hover, .drop-zone.dragover {
+        .drop-zone:hover,
+        .drop-zone.dragover {
             border-color: var(--primary);
             background-color: rgba(99, 102, 241, 0.1);
         }
@@ -102,7 +104,7 @@
             display: inline-block;
             width: 1rem;
             height: 1rem;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
@@ -111,7 +113,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         #downloadLink {
@@ -121,12 +125,13 @@
             text-decoration: none;
             font-weight: 500;
         }
-        
+
         #downloadLink:hover {
             text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Percussion to MIDI</h1>
@@ -210,11 +215,17 @@
                 });
 
                 if (response.ok) {
+                    const tempo = response.headers.get('X-Tempo');
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     downloadLink.href = url;
                     downloadLink.style.display = 'inline-block';
-                    status.textContent = 'Processing complete!';
+
+                    let statusMsg = 'Processing complete!';
+                    if (tempo) {
+                        statusMsg += ` Detected Tempo: <strong>${parseFloat(tempo).toFixed(1)} BPM</strong>`;
+                    }
+                    status.innerHTML = statusMsg;
                 } else {
                     status.textContent = 'Error processing file. Check server logs.';
                 }
@@ -227,4 +238,5 @@
         });
     </script>
 </body>
+
 </html>
