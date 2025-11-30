@@ -236,6 +236,9 @@
             audioPreview.style.display = 'block';
             canvas.style.display = 'block';
 
+            // Auto-play to show visualizer immediately
+            audioPreview.play().catch(e => console.log("Auto-play prevented:", e));
+
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();

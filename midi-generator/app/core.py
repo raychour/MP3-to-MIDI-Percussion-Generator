@@ -5,6 +5,8 @@ import librosa
 import soundfile as sf
 from pathlib import Path
 import shutil
+import matplotlib.pyplot as plt
+import librosa.display
 
 def process_audio(file_path: str, progress_callback=None, quantization: int = 16) -> tuple[str, float, str]:
     """
@@ -184,9 +186,6 @@ def process_audio(file_path: str, progress_callback=None, quantization: int = 16
     mid.save(midi_output)
     
     # Generate Spectrogram
-    import matplotlib.pyplot as plt
-    import librosa.display
-    
     plt.figure(figsize=(10, 4))
     # Use the loop audio we already loaded
     D = librosa.amplitude_to_db(np.abs(librosa.stft(y_loop)), ref=np.max)
