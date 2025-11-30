@@ -48,8 +48,15 @@ If you are running Docker inside an LXC container, you must configure GPU passth
 
 ## Build and Run
 
-### 1. Build the Image
-Navigate to the project directory and build the Docker image:
+### 1. Get the Code
+Clone the repository to your Proxmox host or LXC container:
+```bash
+git clone https://github.com/raychour/MP3-to-MIDI-Percussion-Generator.git
+cd MP3-to-MIDI-Percussion-Generator
+```
+
+### 2. Build the Image
+Build the Docker image:
 ```bash
 docker build -t midi-generator .
 ```
