@@ -42,8 +42,14 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
     # Load drums
     y, sr = librosa.load(drums_path, sr=None)
     
-    # Heuristic: Find 4 bars of high activity
-    # Estimate tempo
+    # Heuristic: Find 4 bars of high activity, prioritizing the "beat" (Kick)
+    # Filter for bass to find the "beat" (4 on the floor)
+    import scipy.signal
+    # Low-pass filter at 200Hz to focus on Kick/Bass
+    sos = scipy.signal.butter(4, 200, 'lp', fs=sr, output='sos')
+    y_low = scipy.signal.sosfilt(sos, y)
+    
+    # Estimate tempo (use full signal for better tempo estimation)
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
     if isinstance(tempo, np.ndarray):
         tempo = float(tempo)
@@ -52,26 +58,20 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
     report(70, f"Tempo detected: {tempo:.1f} BPM. Finding best loop...")
     
     # 4 bars duration in seconds
-    # 4 beats/bar * 4 bars = 16 beats
-    # 60 / tempo = seconds per beat
     duration_4_bars = 16 * (60 / tempo)
     
-    # Calculate onset envelope
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+    # Calculate onset envelope on the LOW-PASSED signal to find the "groove"
+    onset_env = librosa.onset.onset_strength(y=y_low, sr=sr)
     times = librosa.times_like(onset_env, sr=sr)
     
     # Sliding window to find max energy
-    # Convert duration to frame count
-    hop_length = 512 # default for librosa
+    hop_length = 512 
     window_frames = int(duration_4_bars * sr / hop_length)
     
     if window_frames >= len(onset_env):
-        # File is shorter than 4 bars, take the whole thing
         start_frame = 0
         end_frame = len(onset_env)
     else:
-        # Convolve to find window with max energy
-        # Simple sum over window
         window_sum = np.convolve(onset_env, np.ones(window_frames), mode='valid')
         start_frame = np.argmax(window_sum)
         end_frame = start_frame + window_frames
@@ -81,7 +81,7 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
     
     print(f"Selected loop: {start_time:.2f}s to {end_time:.2f}s")
     
-    # Crop the audio
+    # Crop the audio (original full-frequency audio)
     y_loop = y[int(start_time*sr):int(end_time*sr)]
     loop_audio_path = f"temp_loop_{filename_stem}.wav"
     sf.write(loop_audio_path, y_loop, sr)
@@ -107,14 +107,9 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
     
     track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(tempo)))
     
-    # Simple heuristic to distinguish Kick vs Snare/HiHat
-    # We look at the spectral centroid of the audio segment around the onset
-    
     last_time = 0
     ticks_per_beat = mid.ticks_per_beat
     
-    # Convert seconds to ticks
-    # ticks = seconds * (tempo / 60) * ticks_per_beat
     def time_to_ticks(t):
         return int(t * (tempo / 60) * ticks_per_beat)
         
@@ -130,15 +125,29 @@ def process_audio(file_path: str, progress_callback=None) -> tuple[str, float]:
         
         if end_sample > start_sample:
             segment = y_loop[start_sample:end_sample]
-            centroid = librosa.feature.spectral_centroid(y=segment, sr=sr)
+            
+            # Calculate STFT for Band Energy Ratio
+            # n_fft=2048 is default. Bin size ~ 21.5 Hz (at 44.1k)
+            S = np.abs(librosa.stft(segment))
+            
+            # Low Band: < 150 Hz (approx first 7 bins)
+            # High Band: > 2000 Hz (approx bin 93+)
+            low_energy = np.sum(S[:7, :])
+            high_energy = np.sum(S[93:, :])
+            
+            # Spectral Centroid for refinement
+            centroid = librosa.feature.spectral_centroid(S=S, sr=sr)
             avg_centroid = np.mean(centroid)
             
-            if avg_centroid < 1500:
+            # Classification Logic
+            if low_energy > high_energy * 0.8: # Tunable threshold, favor kicks slightly
                 note = 36 # Kick
-            elif avg_centroid < 3000:
-                note = 38 # Snare
             else:
-                note = 42 # Closed HiHat
+                # Distinguish Snare vs HiHat
+                if avg_centroid < 3500:
+                    note = 38 # Snare
+                else:
+                    note = 42 # Closed HiHat
         else:
             note = 38
             
