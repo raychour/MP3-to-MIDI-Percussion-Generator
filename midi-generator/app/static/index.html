@@ -358,6 +358,11 @@
 
                         // Show download link
                         downloadLink.href = `/download/${taskId}`;
+
+                        // Use the filename from the result path if available, or derive from mode
+                        const resultFilename = statusData.result.split('/').pop();
+                        downloadLink.download = resultFilename;
+
                         if (statusData.result.endsWith('.mid')) {
                             downloadLink.textContent = 'Download MIDI';
                         } else {

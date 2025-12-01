@@ -11,8 +11,8 @@ import librosa.display
 def process_audio(file_path: str, progress_callback=None, quantization: int = 16, mode: str = "midi") -> tuple[str, float, str]:
     """
     Main processing pipeline:
-    1. Separate audio using Demucs
-    2. If MIDI: Find loopable section & Transcribe
+    1. Separate audio using Demucs (Always performed to isolate drums/target)
+    2. If MIDI: Find loopable section & Transcribe (using the isolated stem)
     3. If Audio: Return separated stem
     """
     def report(p, m):
