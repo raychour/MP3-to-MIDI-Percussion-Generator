@@ -1,4 +1,4 @@
-# MP3 to MIDI Percussion Generator
+# Stem separation and midi generation engine
 
 A Dockerized Python application that transforms MP3 audio files into MIDI percussion sequences. Designed for musicians and producers, it automatically extracts drum tracks, identifies the best loopable section, and transcribes it into MIDI for use in your DAW.
 
