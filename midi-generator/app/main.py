@@ -80,7 +80,9 @@ async def download_result(task_id: str):
     
     result_path = tasks[task_id]["result"]
     filename = os.path.basename(result_path)
-    return FileResponse(result_path, filename=filename)
+    
+    media_type = "audio/midi" if filename.endswith(".mid") else "audio/wav"
+    return FileResponse(result_path, filename=filename, media_type=media_type)
 
 @app.get("/spectrogram/{task_id}")
 async def download_spectrogram(task_id: str):
