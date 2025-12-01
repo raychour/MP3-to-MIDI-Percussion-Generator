@@ -45,4 +45,4 @@ This application is built to leverage **NVIDIA CUDA** cores for massive performa
 
 ## Deployment
 
-See [deployment.md][]([url](https://github.com/raychour/MP3-to-MIDI-Percussion-Generator/blob/main/README.md)) for detailed instructions on how to deploy this on a Proxmox LXC container with GPU passthrough.
+See [[deployment.md]]([url](https://github.com/raychour/MP3-to-MIDI-Percussion-Generator/blob/main/README.md))for detailed instructions on how to deploy this on a Proxmox LXC container with GPU passthrough.
