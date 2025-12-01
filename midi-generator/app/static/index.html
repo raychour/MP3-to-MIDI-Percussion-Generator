@@ -195,6 +195,7 @@
 
         <div id="status"></div>
         <a id="downloadLink" href="#">Download MIDI</a>
+        <div style="margin-top: 2rem; font-size: 0.75rem; color: var(--text-muted); opacity: 0.5;">v1.2</div>
     </div>
 
     <script>
@@ -364,9 +365,9 @@
                         downloadLink.download = resultFilename;
 
                         if (statusData.result.endsWith('.mid')) {
-                            downloadLink.textContent = 'Download MIDI';
+                            downloadLink.textContent = `Download MIDI (${resultFilename})`;
                         } else {
-                            downloadLink.textContent = 'Download Audio (WAV)';
+                            downloadLink.textContent = `Download Audio (${resultFilename})`;
                         }
                         downloadLink.style.display = 'inline-block';
 
