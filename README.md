@@ -30,6 +30,11 @@ To accurately distinguish between Kicks, Snares, and Hi-Hats, we moved beyond si
     *   **Snare/Hat**: If High Energy dominates, we use the **Spectral Centroid** to further distinguish between a Snare (MIDI 38) and a Closed Hi-Hat (MIDI 42).
 This approach significantly reduces false positives where a heavy Snare might be mistaken for a Kick due to its body, or a Kick mistaken for a low tom.
 
+### 3. Serial Stem Separation Workflow
+To ensure maximum efficacy, the system strictly enforces a serial workflow: **Stem Separation -> Transcription**.
+*   **Isolation First**: Before any MIDI analysis begins, the **Demucs** engine isolates the drum stem from the input audio.
+*   **Clean Analysis**: The loop detection and spectral classification algorithms then operate *exclusively* on this isolated stem. This prevents melodic elements (basslines, vocals) from interfering with the beat detection, ensuring that the generated MIDI is a true representation of the percussion.
+
 ## GPU Acceleration (CUDA)
 
 This application is built to leverage **NVIDIA CUDA** cores for massive performance gains:
@@ -40,4 +45,4 @@ This application is built to leverage **NVIDIA CUDA** cores for massive performa
 
 ## Deployment
 
-See [deployment.md](midi-generator/deployment.md) for detailed instructions on how to deploy this on a Proxmox LXC container with GPU passthrough.
+See [deployment.md](deployment.md) for detailed instructions on how to deploy this on a Proxmox LXC container with GPU passthrough.

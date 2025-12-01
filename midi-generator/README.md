@@ -28,7 +28,6 @@ To accurately distinguish between Kicks, Snares, and Hi-Hats, we moved beyond si
 *   **Ratio Analysis**:
     *   **Kick**: If Low Energy dominates (Low > 0.8 * High), it's classified as a Kick (MIDI 36).
     *   **Snare/Hat**: If High Energy dominates, we use the **Spectral Centroid** to further distinguish between a Snare (MIDI 38) and a Closed Hi-Hat (MIDI 42).
-    *   **Snare/Hat**: If High Energy dominates, we use the **Spectral Centroid** to further distinguish between a Snare (MIDI 38) and a Closed Hi-Hat (MIDI 42).
 This approach significantly reduces false positives where a heavy Snare might be mistaken for a Kick due to its body, or a Kick mistaken for a low tom.
 
 ### 3. Serial Stem Separation Workflow
